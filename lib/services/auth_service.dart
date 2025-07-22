@@ -47,17 +47,32 @@ class AuthService {
       );
 
       final responseData = jsonDecode(response.body);
+      print('Register response: $responseData');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Register berhasil
         final user = UserModel.fromJson(responseData['user']);
-        final token = responseData['token'];
 
-        // Simpan token dan user data
-        await StorageHelper.saveToken(token);
-        await StorageHelper.saveUser(jsonEncode(user.toJson()));
+        // Cek apakah token ada dalam response
+        // Pada beberapa API, register tidak langsung mengembalikan token
+        if (responseData.containsKey('token')) {
+          final token = responseData['token'];
 
-        return {'success': true, 'user': user, 'token': token};
+          // Simpan token dan user data
+          await StorageHelper.saveToken(token);
+          await StorageHelper.saveUser(jsonEncode(user.toJson()));
+
+          return {'success': true, 'user': user, 'token': token};
+        } else {
+          // Tidak ada token, hanya simpan data user sementara
+          // Pengguna harus login untuk mendapatkan token
+          return {
+            'success': true,
+            'message':
+                responseData['message'] ?? 'Registrasi berhasil, silakan login',
+            'user': user,
+          };
+        }
       } else {
         // Register gagal
         return {

@@ -3,10 +3,10 @@ import 'package:tugasakhir_mobile/models/kategori_model.dart';
 class ProdukModel {
   final int id;
   final String namaProduk;
-  final int harga;
-  final int stok;
+  final dynamic harga;
+  final dynamic stok;
   final String? gambarProduk;
-  final int kategoriProdukId;
+  final dynamic kategoriProdukId;
   final String? createdAt;
   final String? updatedAt;
   final KategoriModel? kategori;
@@ -33,10 +33,9 @@ class ProdukModel {
       kategoriProdukId: json['kategori_produk_id'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
-      kategori:
-          json['kategori'] != null
-              ? KategoriModel.fromJson(json['kategori'])
-              : null,
+      kategori: json['kategori'] != null
+          ? KategoriModel.fromJson(json['kategori'])
+          : null,
     );
   }
 
@@ -61,5 +60,32 @@ class ProdukModel {
       'stok': stok,
       'kategori_produk_id': kategoriProdukId,
     };
+  }
+
+  // Mendapatkan URL lengkap gambar produk
+  String? getImageUrl() {
+    if (gambarProduk == null || gambarProduk!.isEmpty) {
+      return null;
+    }
+    return 'http://192.168.137.185:8000/storage/$gambarProduk';
+  }
+
+  // Untuk mendapatkan harga sebagai int
+  int getHargaAsInt() {
+    if (harga is int) return harga;
+    if (harga is String) {
+      return int.tryParse(harga.toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
+          0;
+    }
+    return 0;
+  }
+
+  // Untuk mendapatkan stok sebagai int
+  int getStokAsInt() {
+    if (stok is int) return stok;
+    if (stok is String) {
+      return int.tryParse(stok.toString()) ?? 0;
+    }
+    return 0;
   }
 }

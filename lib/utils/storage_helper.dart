@@ -40,4 +40,19 @@ class StorageHelper {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
+
+  // Menyimpan nilai umum
+  static Future<void> saveValue(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  // Mengambil nilai umum
+  static Future<String?> getValue(String key) async {
+    return await _storage.read(key: key);
+  }
+
+  // Menghapus nilai umum
+  static Future<void> deleteValue(String key) async {
+    await _storage.delete(key: key);
+  }
 }

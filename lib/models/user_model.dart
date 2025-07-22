@@ -4,8 +4,8 @@ class UserModel {
   final String name;
   final String email;
   final String? emailVerifiedAt;
-  final String createdAt;
-  final String updatedAt;
+  final String? createdAt;
+  final String? updatedAt;
 
   UserModel({
     required this.id,
@@ -13,8 +13,8 @@ class UserModel {
     required this.name,
     required this.email,
     this.emailVerifiedAt,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {

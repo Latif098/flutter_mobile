@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:tugasakhir_mobile/models/kategori_model.dart';
 import 'package:tugasakhir_mobile/models/produk_model.dart';
@@ -16,6 +18,7 @@ class _ProdukPageState extends State<ProdukPage>
     with SingleTickerProviderStateMixin {
   final ProdukService _produkService = ProdukService();
   final KategoriService _kategoriService = KategoriService();
+  final ImagePicker _imagePicker = ImagePicker();
 
   // Controllers for adding/editing
   final _formKey = GlobalKey<FormState>();
@@ -32,6 +35,7 @@ class _ProdukPageState extends State<ProdukPage>
   Map<String, List<String>>? _validationErrors;
 
   ProdukModel? _editingProduk;
+  File? _imageFile;
 
   // Format currency
   final _currencyFormat = NumberFormat.currency(
@@ -138,12 +142,13 @@ class _ProdukPageState extends State<ProdukPage>
     _selectedKategori = null;
     _editingProduk = null;
     _validationErrors = null;
+    _imageFile = null;
   }
 
   void _setupForEdit(ProdukModel produk) {
     _namaProdukController.text = produk.namaProduk;
-    _hargaController.text = produk.harga.toString();
-    _stokController.text = produk.stok.toString();
+    _hargaController.text = produk.getHargaAsInt().toString();
+    _stokController.text = produk.getStokAsInt().toString();
 
     // Perbaikan untuk error tipe nullable
     _selectedKategori = _kategoriList.firstWhere(
@@ -154,6 +159,7 @@ class _ProdukPageState extends State<ProdukPage>
     );
 
     _editingProduk = produk;
+    _imageFile = null; // Reset image file when editing
 
     _toggleForm(true);
   }
@@ -176,8 +182,31 @@ class _ProdukPageState extends State<ProdukPage>
     }
   }
 
+  // Pick image from gallery
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
   Future<void> _saveProduk() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedKategori == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih kategori produk')),
+      );
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
@@ -189,9 +218,9 @@ class _ProdukPageState extends State<ProdukPage>
 
       // Parse input values
       final String namaProduk = _namaProdukController.text.trim();
-      final int harga =
-          int.parse(_hargaController.text.replaceAll(RegExp(r'[^0-9]'), ''));
-      final int stok = int.parse(_stokController.text);
+      final String harga =
+          _hargaController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      final String stok = _stokController.text;
       final int kategoriId = _selectedKategori!.id;
 
       if (_editingProduk == null) {
@@ -200,7 +229,8 @@ class _ProdukPageState extends State<ProdukPage>
           namaProduk: namaProduk,
           harga: harga,
           stok: stok,
-          kategoriProdukId: kategoriId,
+          kategoriProdukId: kategoriId.toString(),
+          gambarProduk: _imageFile,
         );
       } else {
         // Update existing product
@@ -209,7 +239,8 @@ class _ProdukPageState extends State<ProdukPage>
           namaProduk: namaProduk,
           harga: harga,
           stok: stok,
-          kategoriProdukId: kategoriId,
+          kategoriProdukId: kategoriId.toString(),
+          gambarProduk: _imageFile,
         );
       }
 
@@ -467,9 +498,10 @@ class _ProdukPageState extends State<ProdukPage>
 
   Widget _buildProductCard(ProdukModel produk) {
     final kategoriName = produk.kategori?.namaKategori ?? 'Tidak ada kategori';
-    final stokColor = produk.stok > 20
+    final stokInt = produk.getStokAsInt();
+    final stokColor = stokInt > 20
         ? Colors.green
-        : produk.stok > 5
+        : stokInt > 5
             ? Colors.orange
             : Colors.red;
 
@@ -524,7 +556,7 @@ class _ProdukPageState extends State<ProdukPage>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Stok: ${produk.stok}',
+                      'Stok: $stokInt',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -535,6 +567,47 @@ class _ProdukPageState extends State<ProdukPage>
                 ],
               ),
             ),
+
+            // Product Image (if available)
+            if (produk.gambarProduk != null && produk.gambarProduk!.isNotEmpty)
+              Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                ),
+                child: Image.network(
+                  produk.getImageUrl() ?? '',
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Gagal memuat gambar',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // Product details
             Padding(
@@ -551,7 +624,7 @@ class _ProdukPageState extends State<ProdukPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _currencyFormat.format(produk.harga),
+                    _currencyFormat.format(produk.getHargaAsInt()),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -666,6 +739,57 @@ class _ProdukPageState extends State<ProdukPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Image Picker
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              width: double.infinity,
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Colors.grey[400]!,
+                  width: 1,
+                ),
+              ),
+              child: _imageFile != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        _imageFile!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : _editingProduk != null &&
+                          _editingProduk!.gambarProduk != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _editingProduk!.getImageUrl() ?? '',
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildImagePlaceholder();
+                            },
+                          ),
+                        )
+                      : _buildImagePlaceholder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Nama produk field
           TextFormField(
             controller: _namaProdukController,
@@ -789,6 +913,27 @@ class _ProdukPageState extends State<ProdukPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.add_photo_alternate_outlined,
+          color: Colors.grey,
+          size: 40,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Klik untuk memilih gambar',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ),
+        ),
+      ],
     );
   }
 

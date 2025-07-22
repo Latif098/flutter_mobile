@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:tugasakhir_mobile/pages/home_page.dart';
+import 'package:tugasakhir_mobile/pages/login_page.dart'; // Import halaman login
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 
 class SignupPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _SignupPageState extends State<SignupPage>
   bool _agreeToTerms = false;
   bool _showSuccessPopup = false;
   String? _emailError;
+  String _successMessage = 'Signup Successful!';
   Map<String, List<String>> _validationErrors = {};
 
   late AnimationController _animationController;
@@ -87,19 +89,28 @@ class _SignupPageState extends State<SignupPage>
         );
 
         if (result['success']) {
-          // Show success popup
+          // Tampilkan pesan sukses dari API jika ada
           setState(() {
             _isLoading = false;
             _showSuccessPopup = true;
+            _successMessage = result['message'] ?? 'Registrasi Berhasil!';
           });
           _animationController.forward();
 
-          // Wait before navigating
+          // Tunggu sebelum navigasi
           Timer(const Duration(seconds: 3), () {
             if (!mounted) return;
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+
+            // Cek apakah ada token, jika tidak arahkan ke halaman login
+            if (result.containsKey('token')) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            }
           });
         } else {
           if (!mounted) return;
@@ -179,8 +190,7 @@ class _SignupPageState extends State<SignupPage>
                         onChanged: _validateEmail,
                         errorMessage:
                             _emailError ?? _validationErrors['email']?.first,
-                        hasCheckmark:
-                            _emailController.text.isNotEmpty &&
+                        hasCheckmark: _emailController.text.isNotEmpty &&
                             _emailError == null,
                       ),
                       const SizedBox(height: 16),
@@ -269,20 +279,19 @@ class _SignupPageState extends State<SignupPage>
                               0.6,
                             ),
                           ),
-                          child:
-                              _isLoading
-                                  ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : const Text(
-                                    'Sign Up',
-                                    style: TextStyle(fontSize: 16),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
                                   ),
+                                )
+                              : const Text(
+                                  'Sign Up',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                         ),
                       ),
                     ],
@@ -330,9 +339,10 @@ class _SignupPageState extends State<SignupPage>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Signup Successful!',
-                          style: TextStyle(
+                        Text(
+                          _successMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -345,7 +355,7 @@ class _SignupPageState extends State<SignupPage>
                             onPressed: () {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (context) => const HomePage(),
+                                  builder: (context) => const LoginPage(),
                                 ),
                               );
                             },
@@ -437,19 +447,18 @@ class _SignupPageState extends State<SignupPage>
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child:
-                    isPassword && togglePasswordVisibility != null
-                        ? IconButton(
-                          icon: Icon(
-                            isPasswordVisible
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: Colors.grey,
-                          ),
-                          onPressed: togglePasswordVisibility,
-                          padding: EdgeInsets.zero,
-                        )
-                        : hasCheckmark
+                child: isPassword && togglePasswordVisibility != null
+                    ? IconButton(
+                        icon: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey,
+                        ),
+                        onPressed: togglePasswordVisibility,
+                        padding: EdgeInsets.zero,
+                      )
+                    : hasCheckmark
                         ? const Icon(Icons.check_circle, color: Colors.green)
                         : const SizedBox(width: 24),
               ),
