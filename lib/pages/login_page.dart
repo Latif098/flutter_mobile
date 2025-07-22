@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tugasakhir_mobile/models/user_model.dart';
+import 'package:tugasakhir_mobile/pages/admin_dashboard.dart';
 import 'package:tugasakhir_mobile/pages/home_page.dart';
 import 'package:tugasakhir_mobile/pages/signup_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
@@ -46,6 +48,21 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
+  // Fungsi untuk mengarahkan pengguna berdasarkan role
+  void _navigateBasedOnRole(UserModel user) {
+    if (user.roleId == 1) {
+      // Role Admin
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AdminDashboard()),
+      );
+    } else {
+      // Role User atau lainnya
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    }
+  }
+
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -59,6 +76,8 @@ class _LoginPageState extends State<LoginPage>
         );
 
         if (result['success']) {
+          final user = result['user'] as UserModel;
+
           // Show success popup
           setState(() {
             _isLoading = false;
@@ -67,11 +86,9 @@ class _LoginPageState extends State<LoginPage>
           _animationController.forward();
 
           // Wait before navigating
-          Timer(const Duration(seconds: 3), () {
+          Timer(const Duration(seconds: 2), () {
             if (!mounted) return;
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+            _navigateBasedOnRole(user);
           });
         } else {
           if (!mounted) return;
@@ -304,27 +321,16 @@ class _LoginPageState extends State<LoginPage>
                           ),
                         ),
                         const SizedBox(height: 24),
-                        SizedBox(
+                        const SizedBox(
                           width: double.infinity,
                           height: 50,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (context) => const HomePage(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2D7CDB),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
+                          child: Center(
+                            child: Text(
+                              'Redirecting...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
                               ),
-                            ),
-                            child: const Text(
-                              'Done',
-                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         ),
