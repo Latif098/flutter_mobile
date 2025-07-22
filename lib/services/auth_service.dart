@@ -34,6 +34,39 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> register(
+    String name,
+    String email,
+    String password,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Register berhasil
+      final user = UserModel.fromJson(responseData['user']);
+      final token = responseData['token'];
+
+      // Simpan token dan user data
+      await StorageHelper.saveToken(token);
+      await StorageHelper.saveUser(jsonEncode(user.toJson()));
+
+      return {'success': true, 'user': user, 'token': token};
+    } else {
+      // Register gagal
+      return {
+        'success': false,
+        'message': responseData['message'] ?? 'Registrasi gagal',
+        'errors': responseData['errors'],
+      };
+    }
+  }
+
   Future<bool> logout() async {
     try {
       // Menghapus token dan user data dari storage
