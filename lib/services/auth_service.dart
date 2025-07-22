@@ -39,30 +39,38 @@ class AuthService {
     String email,
     String password,
   ) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      );
 
-    final responseData = jsonDecode(response.body);
+      final responseData = jsonDecode(response.body);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // Register berhasil
-      final user = UserModel.fromJson(responseData['user']);
-      final token = responseData['token'];
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Register berhasil
+        final user = UserModel.fromJson(responseData['user']);
+        final token = responseData['token'];
 
-      // Simpan token dan user data
-      await StorageHelper.saveToken(token);
-      await StorageHelper.saveUser(jsonEncode(user.toJson()));
+        // Simpan token dan user data
+        await StorageHelper.saveToken(token);
+        await StorageHelper.saveUser(jsonEncode(user.toJson()));
 
-      return {'success': true, 'user': user, 'token': token};
-    } else {
-      // Register gagal
+        return {'success': true, 'user': user, 'token': token};
+      } else {
+        // Register gagal
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Registrasi gagal',
+          'errors': responseData['errors'],
+        };
+      }
+    } catch (e) {
+      print('Register error: ${e.toString()}');
       return {
         'success': false,
-        'message': responseData['message'] ?? 'Registrasi gagal',
-        'errors': responseData['errors'],
+        'message': 'Terjadi kesalahan: ${e.toString()}'
       };
     }
   }
@@ -80,5 +88,14 @@ class AuthService {
 
   Future<bool> isLoggedIn() async {
     return await StorageHelper.isLoggedIn();
+  }
+
+  Future<int?> getUserRole() async {
+    final userJson = await StorageHelper.getUser();
+    if (userJson != null) {
+      final user = UserModel.fromJson(jsonDecode(userJson));
+      return user.roleId;
+    }
+    return null;
   }
 }
