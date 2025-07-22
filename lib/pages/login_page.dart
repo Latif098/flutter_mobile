@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tugasakhir_mobile/pages/home_page.dart';
+import 'package:tugasakhir_mobile/pages/signup_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 import 'dart:async';
 
@@ -13,8 +14,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: "Shopline@gmail.com");
-  final _passwordController = TextEditingController(text: "123456");
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
@@ -93,10 +94,17 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
+  void _navigateToSignUp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SignupPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
@@ -133,7 +141,7 @@ class _LoginPageState extends State<LoginPage>
                     const SizedBox(height: 24),
                     // Title
                     const Text(
-                      'Login with Email',
+                      'Login to ShopLine',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -209,6 +217,38 @@ class _LoginPageState extends State<LoginPage>
                                   'Sign In',
                                   style: TextStyle(fontSize: 16),
                                 ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Don't have an account
+                    Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Don\'t have an account? ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _navigateToSignUp,
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(50, 30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              foregroundColor: const Color(0xFF2D7CDB),
+                            ),
+                            child: const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
