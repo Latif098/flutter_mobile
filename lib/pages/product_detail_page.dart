@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tugasakhir_mobile/models/produk_model.dart';
 import 'package:tugasakhir_mobile/services/cart_service.dart';
+import 'package:tugasakhir_mobile/services/wishlist_service.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final ProdukModel product;
@@ -14,6 +15,7 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   final CartService _cartService = CartService();
+  final WishlistService _wishlistService = WishlistService();
   final PageController _thumbnailController = PageController();
 
   // Format currency
@@ -46,8 +48,52 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // Status apakah item sudah ditambahkan ke cart
   bool _showAddedToSavedMessage = false;
+  bool _isInWishlist = false;
 
   int _currentImageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkWishlistStatus();
+  }
+
+  Future<void> _checkWishlistStatus() async {
+    final isInWishlist = await _wishlistService.isInWishlist(widget.product.id);
+    setState(() {
+      _isInWishlist = isInWishlist;
+    });
+  }
+
+  // Handle adding/removing from wishlist
+  Future<void> _toggleWishlist() async {
+    bool success;
+
+    if (_isInWishlist) {
+      // Remove from wishlist
+      success = await _wishlistService.removeFromWishlist(widget.product.id);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from wishlist')),
+        );
+      }
+    } else {
+      // Add to wishlist
+      success = await _wishlistService.addToWishlist(widget.product);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to wishlist')),
+        );
+      }
+    }
+
+    // Update wishlist status
+    if (success) {
+      setState(() {
+        _isInWishlist = !_isInWishlist;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,13 +125,29 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Product Name
-                              Text(
-                                widget.product.namaProduk,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              // Product Name and Wishlist button
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      widget.product.namaProduk,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: _toggleWishlist,
+                                    icon: Icon(
+                                      _isInWishlist
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: _isInWishlist ? Colors.red : null,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ],
                               ),
 
                               const SizedBox(height: 8),

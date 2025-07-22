@@ -5,7 +5,7 @@ import 'package:tugasakhir_mobile/models/pesanan_model.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 
 class PesananService {
-  final String _baseUrl = 'http://192.168.137.185:8000/api';
+  final String _baseUrl = 'http://192.168.96.9:8000/api';
 
   Future<Map<String, dynamic>> createPesanan(List<CartItemModel> items) async {
     try {

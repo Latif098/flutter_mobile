@@ -115,4 +115,12 @@ class PesananDetailModel {
   String? get gambarProduk {
     return produk != null ? produk!['gambar_produk'] : null;
   }
+
+  // Get the full image URL
+  String? getImageUrl() {
+    if (gambarProduk == null || gambarProduk!.isEmpty) {
+      return null;
+    }
+    return 'http://192.168.96.9:8000/storage/$gambarProduk';
+  }
 }
