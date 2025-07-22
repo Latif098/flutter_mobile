@@ -7,6 +7,7 @@ import 'package:tugasakhir_mobile/models/user_model.dart';
 import 'package:tugasakhir_mobile/pages/cart_page.dart';
 import 'package:tugasakhir_mobile/pages/login_page.dart';
 import 'package:tugasakhir_mobile/pages/product_detail_page.dart'; // Added import for ProductDetailPage
+import 'package:tugasakhir_mobile/pages/profile_page.dart'; // Import profile page
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 import 'package:tugasakhir_mobile/services/cart_service.dart';
 import 'package:tugasakhir_mobile/services/kategori_service.dart';
@@ -178,324 +179,293 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, color: Colors.red[700], size: 60),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _loadData,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadData,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Location and notification bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Location',
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
-                          ),
-                          Text(
-                            'Padang, Sumatera Barat',
-                            style: TextStyle(
-                              color: Colors.blue[600],
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.black,
-                        ),
-                        onPressed: _showComingSoonDialog,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Search bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 12),
-                              Icon(Icons.search, color: Colors.blue[600]),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: 'Find your favorite items',
-                                    border: InputBorder.none,
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.camera_alt_outlined,
-                          color: Colors.blue[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Categories title
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Categories',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _showComingSoonDialog,
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(50, 30),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          'View All',
-                          style: TextStyle(
-                            color: Colors.blue[600],
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Categories row
-                _buildCategoriesRow(),
-
-                // Banner slider
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 8,
-                    child: Stack(
-                      children: [
-                        PageView.builder(
-                          controller: _bannerController,
-                          onPageChanged: (int page) {
-                            setState(() {
-                              _currentBannerIndex = page;
-                            });
-                          },
-                          itemCount: _bannerImages.length,
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                              onTap: _showComingSoonDialog,
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  image: DecorationImage(
-                                    image: AssetImage(_bannerImages[index]),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        Positioned(
-                          bottom: 10,
-                          left: 0,
-                          right: 0,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              _bannerImages.length,
-                              (index) => Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _currentBannerIndex == index
-                                      ? Colors.blue[600]
-                                      : Colors.grey[300],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Hot Deals section (Produk)
-                _buildProductsSection(),
-              ],
-            ),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Toko Online',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              );
+            },
+          ),
+        ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(child: Text(_errorMessage!))
+              : _buildHomeContent(),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedNavIndex,
-        onTap: _onNavigationTap,
-        selectedItemColor: Colors.blue[600],
-        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _selectedNavIndex = index;
+          });
+
+          // Handle navigation
+          switch (index) {
+            case 0: // Home
+              // Already on home page
+              break;
+            case 1: // Cart
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              ).then((_) => setState(
+                  () => _selectedNavIndex = 0)); // Reset index when returning
+              break;
+            case 2: // Profile
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              ).then((_) => setState(
+                  () => _selectedNavIndex = 0)); // Reset index when returning
+              break;
+          }
+        },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_outline),
-            label: 'Saved',
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart_outlined),
+            activeIcon: Icon(Icons.shopping_cart),
             label: 'Cart',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
-            label: 'Account',
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoriesRow() {
+  // Add this method with the original content from the home page build method
+  Widget _buildHomeContent() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner Slider
+            Container(
+              height: 180,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: PageView.builder(
+                controller: _bannerController,
+                itemCount: _bannerImages.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentBannerIndex = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      image: DecorationImage(
+                        image: AssetImage(_bannerImages[index]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Banner Indicators
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _bannerImages.length,
+                  (index) => Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentBannerIndex == index
+                          ? Colors.blue
+                          : Colors.grey[300],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Welcome Message if user is logged in
+            if (_user != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, ${_user!.name}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Discover our products and find what you need',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+
+            // Categories
+            _buildCategorySection(),
+
+            // Products
+            _buildProductsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Rename the method to match its call in _buildHomeContent
+  Widget _buildCategorySection() {
     if (_kategoriList.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Center(
           child: Text(
-            'Belum ada kategori',
-            style: TextStyle(color: Colors.grey[600]),
+            'No categories found',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
           ),
         ),
       );
     }
 
-    // Tampilkan maksimal 5 kategori
-    final displayedKategori =
-        _kategoriList.length > 5 ? _kategoriList.sublist(0, 5) : _kategoriList;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: displayedKategori.map((kategori) {
-            return GestureDetector(
-              onTap: _showComingSoonDialog,
-              child: Container(
-                margin: const EdgeInsets.only(right: 16),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.blue[600],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.category,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      kategori.namaKategori,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Categories title
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Categories',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            );
-          }).toList(),
+              TextButton(
+                onPressed: () {
+                  // View all categories
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(50, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View All',
+                  style: TextStyle(
+                    color: Colors.blue[600],
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+
+        // Categories list
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            itemCount: _kategoriList.length,
+            itemBuilder: (context, index) {
+              final kategori = _kategoriList[index];
+              return GestureDetector(
+                onTap: () {
+                  // Navigate to category page
+                },
+                child: Container(
+                  width: 80,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.category,
+                          color: Colors.blue,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        kategori.namaKategori,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

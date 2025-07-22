@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:tugasakhir_mobile/models/address_model.dart';
 import 'package:tugasakhir_mobile/models/cart_item_model.dart';
 import 'package:tugasakhir_mobile/pages/address_page.dart';
+import 'package:tugasakhir_mobile/pages/order_history_page.dart';
 import 'package:tugasakhir_mobile/services/address_service.dart';
 import 'package:tugasakhir_mobile/services/cart_service.dart';
+import 'package:tugasakhir_mobile/services/pesanan_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({Key? key}) : super(key: key);
@@ -16,10 +18,12 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   final CartService _cartService = CartService();
   final AddressService _addressService = AddressService();
+  final PesananService _pesananService = PesananService();
 
   List<CartItemModel> _cartItems = [];
   AddressModel? _selectedAddress;
   bool _isLoading = true;
+  bool _isProcessing = false;
   int _subTotal = 0;
   int _deliveryFee = 20000; // Biaya pengiriman tetap
   int _discount = 10000; // Diskon
@@ -151,9 +155,42 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ),
                     child: const Text(
-                      'Track Your Order',
+                      'Back to Home',
                       style: TextStyle(
                         color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context); // Back to cart page
+
+                      // Navigate to order history page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OrderHistoryPage(),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      side: const BorderSide(color: Colors.blue),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'View Order History',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -163,6 +200,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Gagal Checkout'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('OK'),
+            ),
+          ],
         );
       },
     );
@@ -191,11 +255,48 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  void _placeOrder() async {
-    // Here you would submit the order to the backend
-    // For now, just clear the cart and show a success message
-    await _cartService.clearCart();
-    _showSuccessDialog();
+  Future<void> _placeOrder() async {
+    // Validasi alamat
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih alamat pengiriman')),
+      );
+      return;
+    }
+
+    // Validasi item keranjang
+    if (_cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Keranjang belanja kosong')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final result = await _pesananService.createPesanan(_cartItems);
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (result['success']) {
+        // Jika berhasil, bersihkan keranjang dan tampilkan dialog sukses
+        await _cartService.clearCart();
+        _showSuccessDialog();
+      } else {
+        // Jika gagal, tampilkan pesan error
+        _showErrorDialog(result['message']);
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+      _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
+    }
   }
 
   @override
@@ -265,20 +366,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _placeOrder,
+                        onPressed: _isProcessing ? null : _placeOrder,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Place Order',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isProcessing
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : const Text(
+                                'Place Order',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
