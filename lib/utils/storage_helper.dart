@@ -71,4 +71,38 @@ class StorageHelper {
   static Future<void> clearAll() async {
     await _storage.deleteAll();
   }
+
+  // Rejected Order IDs management
+  static const String _rejectedOrderIdsKey = 'rejected_order_ids';
+
+  static Future<void> saveRejectedOrderIds(List<int> orderIds) async {
+    final idsJson = orderIds.map((id) => id.toString()).join(',');
+    await _storage.write(key: _rejectedOrderIdsKey, value: idsJson);
+  }
+
+  static Future<List<int>> getRejectedOrderIds() async {
+    final idsJson = await _storage.read(key: _rejectedOrderIdsKey);
+    if (idsJson == null || idsJson.isEmpty) {
+      return [];
+    }
+    return idsJson
+        .split(',')
+        .map((id) => int.tryParse(id) ?? 0)
+        .where((id) => id > 0)
+        .toList();
+  }
+
+  static Future<void> addRejectedOrderId(int orderId) async {
+    final currentIds = await getRejectedOrderIds();
+    if (!currentIds.contains(orderId)) {
+      currentIds.add(orderId);
+      await saveRejectedOrderIds(currentIds);
+    }
+  }
+
+  static Future<void> removeRejectedOrderId(int orderId) async {
+    final currentIds = await getRejectedOrderIds();
+    currentIds.remove(orderId);
+    await saveRejectedOrderIds(currentIds);
+  }
 }
