@@ -236,6 +236,87 @@ class PesananService {
     }
   }
 
+  Future<Map<String, dynamic>> terimaPesanan(int pesananId) async {
+    try {
+      final token = await StorageHelper.getToken();
+
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Anda belum login',
+        };
+      }
+
+      final url = '$_baseUrl/pesanan/$pesananId/terima';
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      print('Menerima pesanan with ID: $pesananId');
+      print('Using endpoint: $url');
+      print('Headers: $headers');
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response headers: ${response.headers}');
+      print('Response body: ${response.body}');
+
+      // Check if response is HTML instead of JSON
+      if (response.body.trim().startsWith('<!DOCTYPE') ||
+          response.body.trim().startsWith('<html')) {
+        return {
+          'success': false,
+          'message':
+              'Server error: Received HTML response instead of JSON. Status: ${response.statusCode}',
+        };
+      }
+
+      // Check if response body is empty
+      if (response.body.trim().isEmpty) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          return {
+            'success': true,
+            'message': 'Pesanan berhasil diterima',
+            'data': null,
+          };
+        } else {
+          return {
+            'success': false,
+            'message':
+                'Server error: Empty response. Status: ${response.statusCode}',
+          };
+        }
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Pesanan berhasil diterima',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Gagal menerima pesanan',
+        };
+      }
+    } catch (e) {
+      print('Error in terimaPesanan: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: ${e.toString()}'
+      };
+    }
+  }
+
   // Method untuk test connectivity dan debugging
   Future<Map<String, dynamic>> testProcessEndpoint(int pesananId) async {
     try {
