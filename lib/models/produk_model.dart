@@ -67,7 +67,7 @@ class ProdukModel {
     if (gambarProduk == null || gambarProduk!.isEmpty) {
       return null;
     }
-    return 'http://192.168.137.185:8000/storage/$gambarProduk';
+    return 'http://10.148.46.9:8000/storage/$gambarProduk';
   }
 
   // Untuk mendapatkan harga sebagai int

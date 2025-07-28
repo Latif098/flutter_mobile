@@ -7,6 +7,7 @@ import 'package:tugasakhir_mobile/pages/login_page.dart';
 import 'package:tugasakhir_mobile/pages/produk_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
+import 'package:tugasakhir_mobile/pages/admin_orders_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -107,7 +108,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       'title': 'Pesanan',
       'icon': Icons.shopping_cart,
       'color': Colors.orange,
-      'route': null,
+      'route': const AdminOrdersPage(),
     },
     {
       'title': 'Laporan',
@@ -225,24 +226,50 @@ class _AdminDashboardState extends State<AdminDashboard>
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: Colors.blue[700], // Make selected color more visible
+        unselectedItemColor:
+            Colors.grey[600], // Make unselected color more visible
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        elevation: 8, // Add elevation for better visibility
         currentIndex: 0,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
+            activeIcon: Icon(Icons.dashboard_outlined),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
             label: 'Analytics',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Orders'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.shopping_cart_outlined),
+            activeIcon: Icon(Icons.shopping_cart),
+            label: 'Orders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
+        onTap: (index) {
+          if (index == 2) {
+            // Navigate to orders page when Orders tab is selected
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+            );
+          } else if (index != 0) {
+            // Show coming soon for other tabs
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fitur ini akan segera hadir'),
+              ),
+            );
+          }
+        },
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,

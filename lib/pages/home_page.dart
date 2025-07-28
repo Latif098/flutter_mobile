@@ -8,6 +8,7 @@ import 'package:tugasakhir_mobile/pages/cart_page.dart';
 import 'package:tugasakhir_mobile/pages/login_page.dart';
 import 'package:tugasakhir_mobile/pages/product_detail_page.dart'; // Added import for ProductDetailPage
 import 'package:tugasakhir_mobile/pages/profile_page.dart'; // Import profile page
+import 'package:tugasakhir_mobile/pages/wishlist_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 import 'package:tugasakhir_mobile/services/cart_service.dart';
 import 'package:tugasakhir_mobile/services/kategori_service.dart';
@@ -218,6 +219,12 @@ class _HomePageState extends State<HomePage> {
               : _buildHomeContent(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedNavIndex,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.blue[700],
+        unselectedItemColor: Colors.grey[600],
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        elevation: 8, // Add elevation for better visibility
         onTap: (index) {
           setState(() {
             _selectedNavIndex = index;
@@ -228,14 +235,21 @@ class _HomePageState extends State<HomePage> {
             case 0: // Home
               // Already on home page
               break;
-            case 1: // Cart
+            case 1: // Wishlist
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WishlistPage()),
+              ).then((_) => setState(
+                  () => _selectedNavIndex = 0)); // Reset index when returning
+              break;
+            case 2: // Cart
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CartPage()),
               ).then((_) => setState(
                   () => _selectedNavIndex = 0)); // Reset index when returning
               break;
-            case 2: // Profile
+            case 3: // Profile
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfilePage()),
@@ -249,6 +263,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_outline),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Wishlist',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart_outlined),

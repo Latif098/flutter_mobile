@@ -228,7 +228,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              firstItem.gambarProduk!,
+                              firstItem
+                                  .getImageUrl()!, // Use getImageUrl instead of direct path
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(Icons.image,
@@ -520,7 +521,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      item.gambarProduk!,
+                      item.getImageUrl()!, // Use getImageUrl instead of direct path
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(Icons.image,

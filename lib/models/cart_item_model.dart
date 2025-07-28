@@ -59,7 +59,7 @@ class CartItemModel {
     if (gambarProduk == null || gambarProduk!.isEmpty) {
       return '';
     }
-    return 'http://192.168.137.185:8000/storage/$gambarProduk';
+    return 'http://10.148.46.9:8000/storage/$gambarProduk';
   }
 
   CartItemModel copyWith({

@@ -5,7 +5,7 @@ import 'package:tugasakhir_mobile/models/pesanan_model.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 
 class PesananService {
-  final String _baseUrl = 'http://192.168.137.185:8000/api';
+  final String _baseUrl = 'http://10.148.46.9:8000/api';
 
   Future<Map<String, dynamic>> createPesanan(List<CartItemModel> items) async {
     try {
@@ -129,6 +129,36 @@ class PesananService {
         'success': false,
         'message': 'Terjadi kesalahan: ${e.toString()}'
       };
+    }
+  }
+
+  // Get all orders (for admin)
+  Future<List<PesananModel>> getAllOrders() async {
+    try {
+      final token = await StorageHelper.getToken();
+
+      if (token == null) {
+        return [];
+      }
+
+      final response = await http.get(
+        Uri.parse('$_baseUrl/pesanan-all'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((item) => PesananModel.fromJson(item)).toList();
+      } else {
+        print('Error fetching all orders: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('Exception fetching all orders: ${e.toString()}');
+      return [];
     }
   }
 
