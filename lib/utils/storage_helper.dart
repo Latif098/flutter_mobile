@@ -4,6 +4,7 @@ class StorageHelper {
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'user_data';
+  static const String _onboardingKey = 'onboarding_completed';
 
   // Menyimpan token
   static Future<void> saveToken(String token) async {
@@ -54,5 +55,20 @@ class StorageHelper {
   // Menghapus nilai umum
   static Future<void> deleteValue(String key) async {
     await _storage.delete(key: key);
+  }
+
+  // Onboarding methods
+  static Future<void> setOnboardingCompleted() async {
+    await _storage.write(key: _onboardingKey, value: 'true');
+  }
+
+  static Future<bool> isOnboardingCompleted() async {
+    final value = await _storage.read(key: _onboardingKey);
+    return value == 'true';
+  }
+
+  // Clear all data (logout)
+  static Future<void> clearAll() async {
+    await _storage.deleteAll();
   }
 }

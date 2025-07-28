@@ -396,12 +396,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.favorite_border),
-            onPressed: () {
-              // Toggle favorite
-            },
-          ),
         ],
       ),
     );

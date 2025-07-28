@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:tugasakhir_mobile/models/user_model.dart';
-import 'package:tugasakhir_mobile/pages/admin_dashboard.dart';
-import 'package:tugasakhir_mobile/pages/home_page.dart';
+import 'package:tugasakhir_mobile/pages/splash_screen.dart';
 import 'package:tugasakhir_mobile/pages/login_page.dart';
-import 'package:tugasakhir_mobile/services/auth_service.dart';
+import 'package:tugasakhir_mobile/pages/home_page.dart';
+import 'package:tugasakhir_mobile/pages/admin_dashboard.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 
 void main() {
@@ -12,82 +10,54 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login App',
+      title: 'ShopLine',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        primaryColor: Colors.blue[600],
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const AuthChecker(),
+      home: const InitialScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class AuthChecker extends StatefulWidget {
-  const AuthChecker({super.key});
+class InitialScreen extends StatefulWidget {
+  const InitialScreen({Key? key}) : super(key: key);
 
   @override
-  State<AuthChecker> createState() => _AuthCheckerState();
+  State<InitialScreen> createState() => _InitialScreenState();
 }
 
-class _AuthCheckerState extends State<AuthChecker> {
-  final AuthService _authService = AuthService();
-  bool _isLoading = true;
-  bool _isLoggedIn = false;
-  UserModel? _user;
-
+class _InitialScreenState extends State<InitialScreen> {
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _checkAppState();
   }
 
-  Future<void> _checkLoginStatus() async {
-    final isLoggedIn = await _authService.isLoggedIn();
+  Future<void> _checkAppState() async {
+    // Always show splash screen first
+    await Future.delayed(const Duration(milliseconds: 100));
 
-    if (isLoggedIn) {
-      // Jika user logged in, ambil data user untuk cek role
-      final userJson = await StorageHelper.getUser();
-      if (userJson != null) {
-        final user = UserModel.fromJson(jsonDecode(userJson));
-        setState(() {
-          _user = user;
-          _isLoggedIn = true;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoggedIn = false;
-          _isLoading = false;
-        });
-      }
-    } else {
-      setState(() {
-        _isLoggedIn = false;
-        _isLoading = false;
-      });
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SplashScreen()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_isLoggedIn && _user != null) {
-      // Arahkan berdasarkan role_id
-      if (_user!.roleId == 1) {
-        return const AdminDashboard();
-      } else {
-        return const HomePage();
-      }
-    } else {
-      return const LoginPage();
-    }
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 }

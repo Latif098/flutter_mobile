@@ -88,22 +88,29 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
-          'Profile',
+          'Account',
           style: TextStyle(
             color: Colors.black,
-            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: () {
+              // Notification functionality
+            },
+            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
           ),
         ],
       ),
@@ -111,7 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ? const Center(child: CircularProgressIndicator())
           : _user == null
               ? _buildNotLoggedIn()
-              : _buildProfile(),
+              : _buildAccountMenu(),
     );
   }
 
@@ -155,133 +162,253 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfile() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile header with avatar and name
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.blue.shade100,
-                  child: Text(
-                    _user!.name.isNotEmpty ? _user!.name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+  Widget _buildAccountMenu() {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      children: [
+        // Your Profile
+        _buildMenuItem(
+          icon: Icons.person_outline,
+          title: 'Your Profile',
+          onTap: () {
+            // Navigate to profile edit
+            _showProfileInfo();
+          },
+        ),
+
+        // My Order
+        _buildMenuItem(
+          icon: Icons.receipt_long_outlined,
+          title: 'My Order',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OrderHistoryPage()),
+            );
+          },
+        ),
+
+        // Payment Methods
+        _buildMenuItem(
+          icon: Icons.credit_card_outlined,
+          title: 'Payment Methods',
+          onTap: () {
+            _showComingSoon('Payment Methods');
+          },
+        ),
+
+        // Notifications
+        _buildMenuItem(
+          icon: Icons.notifications_outlined,
+          title: 'Notifications',
+          onTap: () {
+            _showComingSoon('Notifications');
+          },
+        ),
+
+        // Privacy Policy
+        _buildMenuItem(
+          icon: Icons.privacy_tip_outlined,
+          title: 'Privacy Policy',
+          onTap: () {
+            _showComingSoon('Privacy Policy');
+          },
+        ),
+
+        // Help Center
+        _buildMenuItem(
+          icon: Icons.help_outline,
+          title: 'Help Center',
+          onTap: () {
+            _showComingSoon('Help Center');
+          },
+        ),
+
+        // Invite Friends
+        _buildMenuItem(
+          icon: Icons.person_add_outlined,
+          title: 'Invite Friends',
+          onTap: () {
+            _showComingSoon('Invite Friends');
+          },
+        ),
+
+        const SizedBox(height: 20),
+
+        // Log Out
+        _buildMenuItem(
+          icon: Icons.logout,
+          title: 'Log Out',
+          onTap: _logout,
+          isLogout: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isLogout = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Icon(
+          icon,
+          color: isLogout ? Colors.red : Colors.grey[700],
+          size: 24,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: isLogout ? Colors.red : Colors.black,
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey[400],
+        ),
+      ),
+    );
+  }
+
+  void _showProfileInfo() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Profile header
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.blue.shade100,
+              child: Text(
+                _user!.name.isNotEmpty ? _user!.name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              _user!.name,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              _user!.email,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // User info details
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  _buildInfoRow('Name', _user!.name),
+                  _buildInfoRow('Email', _user!.email),
+                  _buildInfoRow(
+                      'Role', _user!.roleId == 1 ? 'Admin' : 'Customer'),
+                  _buildInfoRow('Member Since', 'January 2024'),
+                ],
+              ),
+            ),
+
+            // Close button
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  _user!.name,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  _user!.email,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-          const Text(
-            'Account',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Profile Menu Options
-          _buildMenuOption(
-            icon: Icons.shopping_bag_outlined,
-            title: 'Order History',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const OrderHistoryPage()),
-              );
-            },
-          ),
-
-          _buildMenuOption(
-            icon: Icons.location_on_outlined,
-            title: 'Addresses',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddressPage()),
-              );
-            },
-          ),
-
-          _buildMenuOption(
-            icon: Icons.settings_outlined,
-            title: 'Account Settings',
-            onTap: () {
-              // Navigate to account settings
-            },
-          ),
-
-          _buildMenuOption(
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            onTap: () {
-              // Navigate to notifications
-            },
-          ),
-
-          _buildMenuOption(
-            icon: Icons.help_outline,
-            title: 'Help & Support',
-            onTap: () {
-              // Navigate to help
-            },
-          ),
-
-          _buildMenuOption(
-            icon: Icons.info_outline,
-            title: 'About App',
-            onTap: () {
-              // Show about dialog
-            },
-          ),
-
-          const SizedBox(height: 32),
-          // Logout button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _logout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
               ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
               ),
             ),
           ),
@@ -290,22 +417,22 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildMenuOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blue),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
+  void _showComingSoon(String feature) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text('$feature'),
+        content:
+            Text('$feature feature is coming soon! Stay tuned for updates.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
