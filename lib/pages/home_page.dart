@@ -219,6 +219,12 @@ class _HomePageState extends State<HomePage> {
               : _buildHomeContent(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedNavIndex,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.blue[700],
+        unselectedItemColor: Colors.grey[600],
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        elevation: 8, // Add elevation for better visibility
         onTap: (index) {
           setState(() {
             _selectedNavIndex = index;

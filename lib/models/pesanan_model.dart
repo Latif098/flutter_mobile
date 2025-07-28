@@ -121,6 +121,6 @@ class PesananDetailModel {
     if (gambarProduk == null || gambarProduk!.isEmpty) {
       return null;
     }
-    return 'http://192.168.96.9:8000/storage/$gambarProduk';
+    return 'http://10.148.46.9:8000/storage/$gambarProduk';
   }
 }

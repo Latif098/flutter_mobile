@@ -108,7 +108,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       'title': 'Pesanan',
       'icon': Icons.shopping_cart,
       'color': Colors.orange,
-      'route': null,
+      'route': const AdminOrdersPage(),
     },
     {
       'title': 'Laporan',

@@ -5,7 +5,7 @@ import 'package:tugasakhir_mobile/models/produk_model.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 
 class ProdukService {
-  final String _baseUrl = 'http://192.168.96.9:8000/api';
+  final String _baseUrl = 'http://10.148.46.9:8000/api';
 
   // Get all products
   Future<Map<String, dynamic>> getAllProduk() async {
