@@ -177,9 +177,9 @@ class _HomePageState extends State<HomePage> {
       _isLoading = true;
     });
 
-    final success = await _authService.logout();
+    final result = await _authService.logout();
 
-    if (success) {
+    if (result['success']) {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const LoginPage()),
