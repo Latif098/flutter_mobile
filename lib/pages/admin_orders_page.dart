@@ -54,8 +54,10 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading orders: ${e.toString()}')),
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Gagal memuat daftar pesanan: ${e.toString()}',
+          isSuccess: false,
         );
       }
     }
@@ -73,42 +75,372 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   }
 
   Future<void> _updateOrderStatus(PesananModel order, String newStatus) async {
-    setState(() {
-      _isLoading = true;
-    });
+    // Show loading dialog
+    _showLoadingDialog();
 
     try {
       final result =
           await _pesananService.updatePesananStatus(order.id, newStatus);
 
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
       if (result['success']) {
         await _loadAllOrders();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Order #${order.id} updated to $newStatus')),
+          _showCustomDialog(
+            title: 'Berhasil!',
+            message: 'Status pesanan berhasil diperbarui ke $newStatus',
+            isSuccess: true,
+            orderNumber: order.id.toString(),
           );
         }
       } else {
-        setState(() {
-          _isLoading = false;
-        });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result['message']}')),
+          _showCustomDialog(
+            title: 'Gagal!',
+            message: result['message'] ?? 'Gagal memperbarui status pesanan',
+            isSuccess: false,
+            orderNumber: order.id.toString(),
           );
         }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating order: ${e.toString()}')),
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Terjadi kesalahan: ${e.toString()}',
+          isSuccess: false,
+          orderNumber: order.id.toString(),
         );
       }
     }
+  }
+
+  void _showCustomDialog({
+    required String title,
+    required String message,
+    required bool isSuccess,
+    String? orderNumber,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSuccess ? Colors.green[100] : Colors.red[100],
+                  ),
+                  child: Icon(
+                    isSuccess ? Icons.check_circle : Icons.error,
+                    size: 50,
+                    color: isSuccess ? Colors.green : Colors.red,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isSuccess ? Colors.green[700] : Colors.red[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Message
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                if (orderNumber != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      'Order #$orderNumber',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isSuccess ? Colors.green : Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Processing order...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _processOrder(PesananModel order) async {
+    // Show loading dialog
+    _showLoadingDialog();
+
+    try {
+      final result = await _pesananService.processPesanan(order.id);
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (result['success']) {
+        await _loadAllOrders();
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Berhasil!',
+            message: 'Pesanan berhasil diproses',
+            isSuccess: true,
+            orderNumber: order.id.toString(),
+          );
+        }
+      } else {
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Gagal!',
+            message: result['message'] ?? 'Gagal memproses pesanan',
+            isSuccess: false,
+            orderNumber: order.id.toString(),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Terjadi kesalahan: ${e.toString()}',
+          isSuccess: false,
+          orderNumber: order.id.toString(),
+        );
+      }
+    }
+  }
+
+  void _showConfirmationDialog({
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+    required Color confirmColor,
+    required IconData icon,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: confirmColor.withOpacity(0.1),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 50,
+                    color: confirmColor,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Message
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  children: [
+                    // Cancel button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[300],
+                          foregroundColor: Colors.grey[700],
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Confirm button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onConfirm();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: confirmColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Ya, Lanjutkan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -405,7 +737,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
             children: [
               if (order.status.toLowerCase() == 'pending')
                 ElevatedButton.icon(
-                  onPressed: () => _updateOrderStatus(order, 'processing'),
+                  onPressed: () => _showConfirmationDialog(
+                    title: 'Process Order',
+                    message:
+                        'Apakah Anda yakin ingin memproses pesanan #${order.id}?',
+                    onConfirm: () => _processOrder(order),
+                    confirmColor: Colors.blue,
+                    icon: Icons.play_arrow,
+                  ),
                   icon: const Icon(Icons.play_arrow, size: 16),
                   label: const Text('Process'),
                   style: ElevatedButton.styleFrom(
@@ -415,7 +754,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 ),
               if (order.status.toLowerCase() == 'processing')
                 ElevatedButton.icon(
-                  onPressed: () => _updateOrderStatus(order, 'completed'),
+                  onPressed: () => _showConfirmationDialog(
+                    title: 'Complete Order',
+                    message:
+                        'Apakah Anda yakin ingin menyelesaikan pesanan #${order.id}?',
+                    onConfirm: () => _updateOrderStatus(order, 'completed'),
+                    confirmColor: Colors.green,
+                    icon: Icons.check_circle,
+                  ),
                   icon: const Icon(Icons.check, size: 16),
                   label: const Text('Complete'),
                   style: ElevatedButton.styleFrom(
@@ -426,7 +772,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
               if (order.status.toLowerCase() == 'pending' ||
                   order.status.toLowerCase() == 'processing')
                 ElevatedButton.icon(
-                  onPressed: () => _updateOrderStatus(order, 'cancelled'),
+                  onPressed: () => _showConfirmationDialog(
+                    title: 'Cancel Order',
+                    message:
+                        'Apakah Anda yakin ingin membatalkan pesanan #${order.id}? Tindakan ini tidak dapat dibatalkan.',
+                    onConfirm: () => _updateOrderStatus(order, 'cancelled'),
+                    confirmColor: Colors.red,
+                    icon: Icons.cancel,
+                  ),
                   icon: const Icon(Icons.cancel, size: 16),
                   label: const Text('Cancel'),
                   style: ElevatedButton.styleFrom(

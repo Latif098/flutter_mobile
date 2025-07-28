@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:tugasakhir_mobile/models/produk_model.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
+import 'package:tugasakhir_mobile/services/api_config.dart';
 
 class ProdukService {
-  final String _baseUrl = 'http://10.148.46.9:8000/api';
+  final String _baseUrl = ApiConfig.baseUrl;
 
   // Get all products
   Future<Map<String, dynamic>> getAllProduk() async {
