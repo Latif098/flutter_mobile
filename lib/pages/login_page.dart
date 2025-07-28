@@ -3,6 +3,7 @@ import 'package:tugasakhir_mobile/models/user_model.dart';
 import 'package:tugasakhir_mobile/pages/admin_dashboard.dart';
 import 'package:tugasakhir_mobile/pages/home_page.dart';
 import 'package:tugasakhir_mobile/pages/signup_page.dart';
+import 'package:tugasakhir_mobile/pages/forgot_password_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 import 'dart:async';
 
@@ -192,7 +193,13 @@ class _LoginPageState extends State<LoginPage>
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(50, 30),
@@ -220,20 +227,19 @@ class _LoginPageState extends State<LoginPage>
                           ),
                           disabledBackgroundColor: Colors.blue.withOpacity(0.6),
                         ),
-                        child:
-                            _isLoading
-                                ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : const Text(
-                                  'Sign In',
-                                  style: TextStyle(fontSize: 16),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
                                 ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(fontSize: 16),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -397,23 +403,22 @@ class _LoginPageState extends State<LoginPage>
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child:
-                isPassword
-                    ? IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                      padding: EdgeInsets.zero,
-                    )
-                    : hasCheckmark
+            child: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                    padding: EdgeInsets.zero,
+                  )
+                : hasCheckmark
                     ? const Icon(Icons.check_circle, color: Colors.green)
                     : const SizedBox(width: 40),
           ),

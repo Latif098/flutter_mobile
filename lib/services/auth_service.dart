@@ -75,11 +75,23 @@ class AuthService {
           };
         }
       } else {
-        // Register gagal
+        // Register gagal - Handle validation errors properly
+        Map<String, List<String>> errors = {};
+        if (responseData['errors'] != null) {
+          final rawErrors = responseData['errors'] as Map<String, dynamic>;
+          rawErrors.forEach((key, value) {
+            if (value is List) {
+              errors[key] = value.map((e) => e.toString()).toList();
+            } else {
+              errors[key] = [value.toString()];
+            }
+          });
+        }
+
         return {
           'success': false,
           'message': responseData['message'] ?? 'Registrasi gagal',
-          'errors': responseData['errors'],
+          'errors': errors,
         };
       }
     } catch (e) {
@@ -91,14 +103,121 @@ class AuthService {
     }
   }
 
-  Future<bool> logout() async {
+  Future<Map<String, dynamic>> logout() async {
     try {
-      // Menghapus token dan user data dari storage
-      await StorageHelper.deleteToken();
-      await StorageHelper.deleteUser();
-      return true;
+      final token = await StorageHelper.getToken();
+
+      if (token != null) {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/logout'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+
+        // Clear storage regardless of response
+        await StorageHelper.clearAll();
+
+        if (response.statusCode == 200) {
+          return {'success': true};
+        }
+      }
+
+      // Clear storage even if no token
+      await StorageHelper.clearAll();
+      return {'success': true};
     } catch (e) {
-      return false;
+      // Clear storage on error too
+      await StorageHelper.clearAll();
+      return {'success': true};
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String password,
+    String confirmPassword,
+  ) async {
+    try {
+      final url = '$_baseUrl/forgot-password';
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      final body = {
+        'email': email,
+        'password': password,
+        'password_confirmation': confirmPassword,
+      };
+
+      print('Reset Password Request:');
+      print('URL: $url');
+      print('Headers: $headers');
+      print('Body: $body');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Headers: ${response.headers}');
+      print('Response Body: ${response.body}');
+
+      // Check if response is HTML instead of JSON
+      if (response.body.trim().startsWith('<!DOCTYPE') ||
+          response.body.trim().startsWith('<html')) {
+        return {
+          'success': false,
+          'message':
+              'Server error: Received HTML response instead of JSON. Status: ${response.statusCode}',
+        };
+      }
+
+      // Check if response body is empty
+      if (response.body.trim().isEmpty) {
+        return {
+          'success': false,
+          'message':
+              'Server error: Empty response. Status: ${response.statusCode}',
+        };
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Password berhasil direset',
+        };
+      } else {
+        // Handle validation errors properly
+        Map<String, List<String>> errors = {};
+        if (responseData['errors'] != null) {
+          final rawErrors = responseData['errors'] as Map<String, dynamic>;
+          rawErrors.forEach((key, value) {
+            if (value is List) {
+              errors[key] = value.map((e) => e.toString()).toList();
+            } else {
+              errors[key] = [value.toString()];
+            }
+          });
+        }
+
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Gagal mereset password',
+          'errors': errors,
+        };
+      }
+    } catch (e) {
+      print('Reset Password Error: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: ${e.toString()}',
+      };
     }
   }
 

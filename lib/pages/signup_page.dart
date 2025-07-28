@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:tugasakhir_mobile/pages/home_page.dart';
 import 'package:tugasakhir_mobile/pages/login_page.dart'; // Import halaman login
+import 'package:tugasakhir_mobile/pages/forgot_password_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
 
 class SignupPage extends StatefulWidget {
@@ -116,10 +117,20 @@ class _SignupPageState extends State<SignupPage>
           if (!mounted) return;
           setState(() {
             _isLoading = false;
-            if (result.containsKey('errors')) {
-              _validationErrors = Map<String, List<String>>.from(
-                result['errors'],
-              );
+            if (result.containsKey('errors') && result['errors'] != null) {
+              // Handle validation errors safely
+              final errors = result['errors'] as Map<String, dynamic>?;
+              if (errors != null) {
+                _validationErrors = {};
+                errors.forEach((key, value) {
+                  if (value is List) {
+                    _validationErrors[key] =
+                        value.map((e) => e.toString()).toList();
+                  } else {
+                    _validationErrors[key] = [value.toString()];
+                  }
+                });
+              }
             }
           });
 
@@ -217,7 +228,32 @@ class _SignupPageState extends State<SignupPage>
                             style: TextStyle(color: Colors.green, fontSize: 12),
                           ),
                         ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+
+                      // Forgot Password link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ForgotPasswordPage(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: Color(0xFF2D7CDB),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
 
                       // Terms & Condition checkbox
                       Row(

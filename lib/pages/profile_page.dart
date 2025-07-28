@@ -74,8 +74,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (result == true) {
-      await _authService.logout();
-      if (mounted) {
+      final logoutResult = await _authService.logout();
+      if (mounted && logoutResult['success']) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const LoginPage()),
