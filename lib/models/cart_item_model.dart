@@ -59,7 +59,7 @@ class CartItemModel {
     if (gambarProduk == null || gambarProduk!.isEmpty) {
       return '';
     }
-    return 'http://10.148.46.9:8000/storage/$gambarProduk';
+    return 'https://tugasakhirmobile.skripsikuoke.my.id//storage/$gambarProduk';
   }
 
   CartItemModel copyWith({

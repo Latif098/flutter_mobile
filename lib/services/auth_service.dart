@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:tugasakhir_mobile/models/user_model.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
+import 'package:tugasakhir_mobile/services/api_config.dart';
 
 class AuthService {
-  final String _baseUrl = 'http://10.148.46.9:8000/api';
+  final String _baseUrl = ApiConfig.baseUrl;
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
