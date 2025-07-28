@@ -46,12 +46,371 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading order history: ${e.toString()}'),
-          ),
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Gagal memuat riwayat pesanan: ${e.toString()}',
+          isSuccess: false,
         );
       }
+    }
+  }
+
+  void _showCustomDialog({
+    required String title,
+    required String message,
+    required bool isSuccess,
+    String? orderNumber,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSuccess ? Colors.green[100] : Colors.red[100],
+                  ),
+                  child: Icon(
+                    isSuccess ? Icons.check_circle : Icons.error,
+                    size: 50,
+                    color: isSuccess ? Colors.green : Colors.red,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isSuccess ? Colors.green[700] : Colors.red[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Message
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                if (orderNumber != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      'Order #$orderNumber',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isSuccess ? Colors.green : Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Processing...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showConfirmationDialog({
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+    required Color confirmColor,
+    required IconData icon,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: confirmColor.withOpacity(0.1),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 50,
+                    color: confirmColor,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Message
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  children: [
+                    // Cancel button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[300],
+                          foregroundColor: Colors.grey[700],
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Confirm button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onConfirm();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: confirmColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Ya, Lanjutkan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _terimaPesanan(PesananModel pesanan) async {
+    // Show loading dialog
+    _showLoadingDialog();
+
+    try {
+      final result = await _pesananService.terimaPesanan(pesanan.id);
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (result['success']) {
+        await _loadOrderHistory();
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Berhasil!',
+            message: 'Pesanan berhasil diterima. Terima kasih!',
+            isSuccess: true,
+            orderNumber: pesanan.id.toString(),
+          );
+        }
+      } else {
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Gagal!',
+            message: result['message'] ?? 'Gagal menerima pesanan',
+            isSuccess: false,
+            orderNumber: pesanan.id.toString(),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Terjadi kesalahan: ${e.toString()}',
+          isSuccess: false,
+          orderNumber: pesanan.id.toString(),
+        );
+      }
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'processing':
+      case 'diproses':
+        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      case 'delivered':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getStatusBgColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Colors.green[50]!;
+      case 'processing':
+      case 'diproses':
+        return Colors.blue[50]!;
+      case 'pending':
+        return Colors.orange[50]!;
+      case 'cancelled':
+        return Colors.red[50]!;
+      case 'delivered':
+        return Colors.purple[50]!;
+      default:
+        return Colors.grey[200]!;
     }
   }
 
@@ -178,13 +537,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange[50],
+                    color: _getStatusBgColor(pesanan.status),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     pesanan.status.toLowerCase(),
                     style: TextStyle(
-                      color: Colors.orange,
+                      color: _getStatusColor(pesanan.status),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -306,30 +665,69 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             ),
           ),
 
-          // View Details button
+          // Action buttons
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  _showOrderDetails(pesanan);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            child: Column(
+              children: [
+                // Terima Pesanan button (only for completed status)
+                if (pesanan.status.toLowerCase() == 'completed' ||
+                    pesanan.status.toLowerCase() == 'diproses' ||
+                    pesanan.status.toLowerCase() == 'processing')
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showConfirmationDialog(
+                        title: 'Terima Pesanan',
+                        message:
+                            'Apakah Anda yakin telah menerima pesanan #${pesanan.id}? Tindakan ini akan menandai pesanan sebagai selesai.',
+                        onConfirm: () => _terimaPesanan(pesanan),
+                        confirmColor: Colors.green,
+                        icon: Icons.check_circle_outline,
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 20),
+                      label: const Text(
+                        'Terima Pesanan',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  'View Details',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+
+                // View Details button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showOrderDetails(pesanan);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'View Details',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -461,13 +859,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange[50],
+                        color: _getStatusBgColor(pesanan.status),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         pesanan.status.toLowerCase(),
                         style: TextStyle(
-                          color: Colors.orange,
+                          color: _getStatusColor(pesanan.status),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
