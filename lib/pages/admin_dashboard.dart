@@ -13,6 +13,7 @@ import 'package:tugasakhir_mobile/services/produk_service.dart';
 import 'package:tugasakhir_mobile/services/kategori_service.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 import 'package:tugasakhir_mobile/pages/admin_orders_page.dart';
+import 'package:tugasakhir_mobile/pages/laporan_pesanan_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -56,6 +57,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'icon': Icons.shopping_cart,
       'color': Colors.orange,
       'route': const AdminOrdersPage(),
+    },
+    {
+      'title': 'Laporan',
+      'icon': Icons.bar_chart,
+      'color': Colors.purple,
+      'route': const LaporanPesananPage(),
     },
   ];
 

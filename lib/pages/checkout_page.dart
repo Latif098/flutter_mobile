@@ -357,7 +357,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     const SizedBox(height: 16),
 
                     // Promo code input
-                    _buildPromoCodeInput(),
+                    // _buildPromoCodeInput(),
 
                     const SizedBox(height: 24),
 
@@ -595,40 +595,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildPromoCodeInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _promoCodeController,
-            decoration: InputDecoration(
-              hintText: 'Enter promo code',
-              prefixIcon: const Icon(Icons.discount_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: _addPromoCode,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          ),
-          child: const Text(
-            'Add',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildPromoCodeInput() {
+  //   return Row(
+  //     children: [
+  //       Expanded(
+  //         child: TextField(
+  //           controller: _promoCodeController,
+  //           decoration: InputDecoration(
+  //             hintText: 'Enter promo code',
+  //             prefixIcon: const Icon(Icons.discount_outlined),
+  //             border: OutlineInputBorder(
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //             contentPadding: const EdgeInsets.symmetric(vertical: 12),
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 12),
+  //       ElevatedButton(
+  //         onPressed: _addPromoCode,
+  //         style: ElevatedButton.styleFrom(
+  //           backgroundColor: Colors.blue,
+  //           shape: RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(8),
+  //           ),
+  //           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+  //         ),
+  //         child: const Text(
+  //           'Add',
+  //           style: TextStyle(
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }
