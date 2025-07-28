@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tugasakhir_mobile/models/pesanan_model.dart';
 import 'package:tugasakhir_mobile/services/pesanan_service.dart';
+import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 
 class AdminOrdersPage extends StatefulWidget {
   const AdminOrdersPage({Key? key}) : super(key: key);
@@ -14,13 +15,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   final PesananService _pesananService = PesananService();
   bool _isLoading = true;
   List<PesananModel> _orders = [];
+  Set<int> _rejectedOrderIds = {}; // Track locally rejected orders
   String _selectedFilter = 'Semua';
   final List<String> _filterOptions = [
     'Semua',
     'Pending',
     'Processing',
     'Completed',
-    'Cancelled'
+    'Rejected'
   ];
 
   // Currency formatter
@@ -33,7 +35,80 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   @override
   void initState() {
     super.initState();
+    _loadRejectedOrderIds();
     _loadAllOrders();
+  }
+
+  // Load rejected order IDs from local storage
+  Future<void> _loadRejectedOrderIds() async {
+    try {
+      final rejectedIds = await StorageHelper.getRejectedOrderIds();
+      setState(() {
+        _rejectedOrderIds = rejectedIds.toSet();
+      });
+      print('Loaded ${_rejectedOrderIds.length} rejected order IDs');
+    } catch (e) {
+      print('Error loading rejected order IDs: $e');
+    }
+  }
+
+  // Save rejected order ID to local storage
+  Future<void> _saveRejectedOrderId(int orderId) async {
+    try {
+      _rejectedOrderIds.add(orderId);
+      await StorageHelper.saveRejectedOrderIds(_rejectedOrderIds.toList());
+      print('Saved rejected order ID: $orderId');
+    } catch (e) {
+      print('Error saving rejected order ID: $e');
+    }
+  }
+
+  // Check if order is rejected locally
+  bool _isOrderRejected(PesananModel order) {
+    return _rejectedOrderIds.contains(order.id);
+  }
+
+  // Get effective status (considering local rejection tracking and database status)
+  String _getEffectiveStatus(PesananModel order) {
+    final dbStatus = order.status.toLowerCase();
+
+    // Check if status from database is 'ditolak'
+    if (dbStatus == 'ditolak') {
+      return 'rejected';
+    }
+
+    // Also check local tracking (fallback)
+    if (_isOrderRejected(order)) {
+      return 'rejected';
+    }
+
+    return dbStatus;
+  }
+
+  // Get display status (user-friendly format)
+  String _getDisplayStatus(PesananModel order) {
+    final dbStatus = order.status.toLowerCase();
+
+    // Convert database status to display format
+    switch (dbStatus) {
+      case 'ditolak':
+        return 'Rejected';
+      case 'pending':
+        return 'Pending';
+      case 'processing':
+        return 'Processing';
+      case 'completed':
+      case 'selesai':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        // Check local tracking
+        if (_isOrderRejected(order)) {
+          return 'Rejected';
+        }
+        return order.status; // Return original status if not recognized
+    }
   }
 
   Future<void> _loadAllOrders() async {
@@ -43,6 +118,13 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
 
     try {
       final result = await _pesananService.getAllOrders();
+
+      // Debug: Print order statuses for verification
+      print('=== Order Status Check ===');
+      final rejectedCount =
+          result.where((o) => o.status.toLowerCase() == 'ditolak').length;
+      print('Found $rejectedCount orders with status "ditolak"');
+      print('========================');
 
       setState(() {
         _orders = result;
@@ -69,7 +151,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     } else {
       return _orders
           .where((order) =>
-              order.status.toLowerCase() == _selectedFilter.toLowerCase())
+              _getEffectiveStatus(order).toLowerCase() ==
+              _selectedFilter.toLowerCase())
           .toList();
     }
   }
@@ -237,7 +320,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     );
   }
 
-  void _showLoadingDialog() {
+  void _showLoadingDialog([String? customMessage]) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -256,7 +339,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(
-                  'Processing order...',
+                  customMessage ?? 'Processing order...',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[700],
@@ -295,6 +378,54 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           _showCustomDialog(
             title: 'Gagal!',
             message: result['message'] ?? 'Gagal memproses pesanan',
+            isSuccess: false,
+            orderNumber: order.id.toString(),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        _showCustomDialog(
+          title: 'Error!',
+          message: 'Terjadi kesalahan: ${e.toString()}',
+          isSuccess: false,
+          orderNumber: order.id.toString(),
+        );
+      }
+    }
+  }
+
+  Future<void> _tolakPesanan(PesananModel order) async {
+    // Show loading dialog
+    _showLoadingDialog('Rejecting order...');
+
+    try {
+      final result = await _pesananService.tolakPesanan(order.id);
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (result['success']) {
+        // Save order ID to rejected list
+        await _saveRejectedOrderId(order.id);
+
+        await _loadAllOrders();
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Berhasil!',
+            message: 'Pesanan berhasil ditolak',
+            isSuccess: true,
+            orderNumber: order.id.toString(),
+          );
+        }
+      } else {
+        if (mounted) {
+          _showCustomDialog(
+            title: 'Gagal!',
+            message: result['message'] ?? 'Gagal menolak pesanan',
             isSuccess: false,
             orderNumber: order.id.toString(),
           );
@@ -523,7 +654,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 _buildStatCard(
                   'Pending',
                   _orders
-                      .where((o) => o.status.toLowerCase() == 'pending')
+                      .where((o) =>
+                          _getEffectiveStatus(o).toLowerCase() == 'pending')
                       .length
                       .toString(),
                   Colors.orange,
@@ -532,11 +664,43 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 _buildStatCard(
                   'Completed',
                   _orders
-                      .where((o) => o.status.toLowerCase() == 'completed')
+                      .where((o) =>
+                          _getEffectiveStatus(o).toLowerCase() == 'completed')
                       .length
                       .toString(),
                   Colors.green,
                 ),
+              ],
+            ),
+          ),
+
+          // Second row of stats
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                _buildStatCard(
+                  'Processing',
+                  _orders
+                      .where((o) =>
+                          _getEffectiveStatus(o).toLowerCase() == 'processing')
+                      .length
+                      .toString(),
+                  Colors.blue,
+                ),
+                const SizedBox(width: 10),
+                _buildStatCard(
+                  'Rejected',
+                  _orders
+                      .where((o) =>
+                          _getEffectiveStatus(o).toLowerCase() == 'rejected')
+                      .length
+                      .toString(),
+                  Colors.red,
+                ),
+                const SizedBox(width: 10),
+                // Empty space for alignment
+                Expanded(child: Container()),
               ],
             ),
           ),
@@ -648,8 +812,9 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     Color statusColor;
     Color statusBgColor;
 
-    switch (order.status.toLowerCase()) {
+    switch (_getEffectiveStatus(order)) {
       case 'completed':
+      case 'selesai':
         statusColor = Colors.green;
         statusBgColor = Colors.green[50]!;
         break;
@@ -661,7 +826,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         statusColor = Colors.orange;
         statusBgColor = Colors.orange[50]!;
         break;
-      case 'cancelled':
+      case 'rejected':
+      case 'ditolak':
         statusColor = Colors.red;
         statusBgColor = Colors.red[50]!;
         break;
@@ -706,7 +872,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                order.status,
+                _getDisplayStatus(order),
                 style: TextStyle(
                   fontSize: 12,
                   color: statusColor,
@@ -732,10 +898,12 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           const Divider(height: 24),
 
           // Order actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
             children: [
-              if (order.status.toLowerCase() == 'pending')
+              if (_getEffectiveStatus(order).toLowerCase() == 'pending')
                 ElevatedButton.icon(
                   onPressed: () => _showConfirmationDialog(
                     title: 'Process Order',
@@ -752,7 +920,24 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                     foregroundColor: Colors.white,
                   ),
                 ),
-              if (order.status.toLowerCase() == 'processing')
+              if (_getEffectiveStatus(order).toLowerCase() == 'pending')
+                ElevatedButton.icon(
+                  onPressed: () => _showConfirmationDialog(
+                    title: 'Reject Order',
+                    message:
+                        'Apakah Anda yakin ingin menolak pesanan #${order.id}? Pesanan yang ditolak tidak dapat diproses kembali.',
+                    onConfirm: () => _tolakPesanan(order),
+                    confirmColor: Colors.red,
+                    icon: Icons.clear,
+                  ),
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Reject'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              if (_getEffectiveStatus(order).toLowerCase() == 'processing')
                 ElevatedButton.icon(
                   onPressed: () => _showConfirmationDialog(
                     title: 'Complete Order',
@@ -766,24 +951,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   label: const Text('Complete'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              if (order.status.toLowerCase() == 'pending' ||
-                  order.status.toLowerCase() == 'processing')
-                ElevatedButton.icon(
-                  onPressed: () => _showConfirmationDialog(
-                    title: 'Cancel Order',
-                    message:
-                        'Apakah Anda yakin ingin membatalkan pesanan #${order.id}? Tindakan ini tidak dapat dibatalkan.',
-                    onConfirm: () => _updateOrderStatus(order, 'cancelled'),
-                    confirmColor: Colors.red,
-                    icon: Icons.cancel,
-                  ),
-                  icon: const Icon(Icons.cancel, size: 16),
-                  label: const Text('Cancel'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
                 ),

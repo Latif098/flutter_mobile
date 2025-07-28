@@ -1,11 +1,16 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:tugasakhir_mobile/models/user_model.dart';
+import 'package:tugasakhir_mobile/models/pesanan_model.dart';
+import 'package:tugasakhir_mobile/models/produk_model.dart';
+import 'package:tugasakhir_mobile/models/kategori_model.dart';
 import 'package:tugasakhir_mobile/pages/kategori_page.dart';
 import 'package:tugasakhir_mobile/pages/login_page.dart';
 import 'package:tugasakhir_mobile/pages/produk_page.dart';
 import 'package:tugasakhir_mobile/services/auth_service.dart';
+import 'package:tugasakhir_mobile/services/pesanan_service.dart';
+import 'package:tugasakhir_mobile/services/produk_service.dart';
+import 'package:tugasakhir_mobile/services/kategori_service.dart';
 import 'package:tugasakhir_mobile/utils/storage_helper.dart';
 import 'package:tugasakhir_mobile/pages/admin_orders_page.dart';
 
@@ -16,82 +21,24 @@ class AdminDashboard extends StatefulWidget {
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard>
-    with SingleTickerProviderStateMixin {
+class _AdminDashboardState extends State<AdminDashboard> {
   final AuthService _authService = AuthService();
+  final PesananService _pesananService = PesananService();
+  final ProdukService _produkService = ProdukService();
+  final KategoriService _kategoriService = KategoriService();
+
   UserModel? _user;
   bool _isLoading = true;
-  late TabController _tabController;
-  final List<String> _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  final List<double> _salesData = [10500, 15000, 8000, 25000, 22000, 18000];
 
-  // Dummy data for charts
-  final List<Map<String, dynamic>> _recentUsers = [
-    {
-      'name': 'Aditya Pratama',
-      'email': 'aditya@gmail.com',
-      'date': '2 jam yang lalu',
-      'avatar': 'AP',
-    },
-    {
-      'name': 'Budi Santoso',
-      'email': 'budi@gmail.com',
-      'date': '5 jam yang lalu',
-      'avatar': 'BS',
-    },
-    {
-      'name': 'Citra Dewi',
-      'email': 'citra@gmail.com',
-      'date': '1 hari yang lalu',
-      'avatar': 'CD',
-    },
-    {
-      'name': 'Dodi Wijaya',
-      'email': 'dodi@gmail.com',
-      'date': '2 hari yang lalu',
-      'avatar': 'DW',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _recentOrders = [
-    {
-      'id': 'ORD-001',
-      'customer': 'Aditya P.',
-      'amount': 'Rp 350.000',
-      'status': 'Selesai',
-      'statusColor': Colors.green,
-    },
-    {
-      'id': 'ORD-002',
-      'customer': 'Budi S.',
-      'amount': 'Rp 120.000',
-      'status': 'Diproses',
-      'statusColor': Colors.orange,
-    },
-    {
-      'id': 'ORD-003',
-      'customer': 'Citra D.',
-      'amount': 'Rp 475.000',
-      'status': 'Selesai',
-      'statusColor': Colors.green,
-    },
-    {
-      'id': 'ORD-004',
-      'customer': 'Dodi W.',
-      'amount': 'Rp 250.000',
-      'status': 'Dibatalkan',
-      'statusColor': Colors.red,
-    },
-  ];
+  // Real data variables
+  int _totalProduk = 0;
+  int _totalKategori = 0;
+  int _totalPesanan = 0;
+  double _totalPendapatan = 0;
+  List<PesananModel> _recentOrders = [];
 
   // Menu admin
   final List<Map<String, dynamic>> _adminMenus = [
-    {
-      'title': 'Pengguna',
-      'icon': Icons.people,
-      'color': Colors.blue,
-      'route': null,
-    },
     {
       'title': 'Produk',
       'icon': Icons.inventory,
@@ -110,31 +57,13 @@ class _AdminDashboardState extends State<AdminDashboard>
       'color': Colors.orange,
       'route': const AdminOrdersPage(),
     },
-    {
-      'title': 'Laporan',
-      'icon': Icons.bar_chart,
-      'color': Colors.purple,
-      'route': null,
-    },
-    {
-      'title': 'Pengaturan',
-      'icon': Icons.settings,
-      'color': Colors.grey,
-      'route': null,
-    },
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+    _loadDashboardData();
   }
 
   Future<void> _loadUserData() async {
@@ -142,13 +71,52 @@ class _AdminDashboardState extends State<AdminDashboard>
     if (userJson != null) {
       setState(() {
         _user = UserModel.fromJson(jsonDecode(userJson));
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Load products
+      final produkResult = await _produkService.getAllProduk();
+      if (produkResult['success']) {
+        final List<ProdukModel> produkList = produkResult['data'];
+        _totalProduk = produkList.length;
+      }
+
+      // Load categories
+      final kategoriResult = await _kategoriService.getAllKategori();
+      if (kategoriResult['success']) {
+        final List<KategoriModel> kategoriList = kategoriResult['data'];
+        _totalKategori = kategoriList.length;
+      }
+
+      // Load orders
+      final pesananList = await _pesananService.getAllOrders();
+      _totalPesanan = pesananList.length;
+
+      // Calculate total revenue and get recent orders
+      _totalPendapatan = 0;
+      for (final pesanan in pesananList) {
+        if (pesanan.status.toLowerCase() == 'completed' ||
+            pesanan.status.toLowerCase() == 'selesai') {
+          _totalPendapatan += pesanan.calculateTotal();
+        }
+      }
+
+      // Get recent 5 orders
+      _recentOrders = pesananList.take(5).toList();
+    } catch (e) {
+      print('Error loading dashboard data: $e');
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _logout() async {
@@ -168,30 +136,60 @@ class _AdminDashboardState extends State<AdminDashboard>
         _isLoading = false;
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal logout')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal logout')),
+      );
     }
   }
 
   void _navigateToMenu(int index) {
     final menu = _adminMenus[index];
-    if (menu['route'] != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => menu['route']),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Menu ${menu["title"]} akan segera hadir')),
-      );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => menu['route']),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'diproses':
+      case 'processing':
+        return Colors.blue;
+      case 'completed':
+      case 'selesai':
+        return Colors.green;
+      case 'cancelled':
+      case 'dibatalkan':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
+  }
+
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        )}';
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Memuat data dashboard...'),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -201,84 +199,36 @@ class _AdminDashboardState extends State<AdminDashboard>
           children: [
             _buildHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWelcomeCard(),
-                    const SizedBox(height: 20),
-                    _buildStatCards(),
-                    const SizedBox(height: 20),
-                    _buildAdminMenus(),
-                    const SizedBox(height: 20),
-                    _buildChartSection(),
-                    const SizedBox(height: 20),
-                    _buildTabSection(),
-                  ],
+              child: RefreshIndicator(
+                onRefresh: _loadDashboardData,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeCard(),
+                      const SizedBox(height: 20),
+                      _buildStatCards(),
+                      const SizedBox(height: 20),
+                      _buildAdminMenus(),
+                      const SizedBox(height: 20),
+                      _buildRecentOrdersSection(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.blue[700], // Make selected color more visible
-        unselectedItemColor:
-            Colors.grey[600], // Make unselected color more visible
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        elevation: 8, // Add elevation for better visibility
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            activeIcon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: 'Analytics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart),
-            label: 'Orders',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 2) {
-            // Navigate to orders page when Orders tab is selected
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
-            );
-          } else if (index != 0) {
-            // Show coming soon for other tabs
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fitur ini akan segera hadir'),
-              ),
-            );
-          }
-        },
-      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add),
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Tambah produk baru akan segera hadir'),
-            ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ProdukPage()),
           );
         },
       ),
@@ -309,14 +259,8 @@ class _AdminDashboardState extends State<AdminDashboard>
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifikasi akan segera hadir'),
-                    ),
-                  );
-                },
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadDashboardData,
               ),
               const SizedBox(width: 8),
               GestureDetector(
@@ -370,20 +314,21 @@ class _AdminDashboardState extends State<AdminDashboard>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Senin, ${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
+                  _getFormattedDate(),
                   style: const TextStyle(fontSize: 14, color: Colors.white70),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Laporan akan segera hadir'),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminOrdersPage(),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.bar_chart, size: 16),
-                  label: const Text('Laporan Harian'),
+                  icon: const Icon(Icons.shopping_cart, size: 16),
+                  label: const Text('Kelola Pesanan'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.indigo[900],
@@ -401,7 +346,7 @@ class _AdminDashboardState extends State<AdminDashboard>
               color: Colors.white24,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.analytics, color: Colors.white, size: 40),
+            child: const Icon(Icons.dashboard, color: Colors.white, size: 40),
           ),
         ],
       ),
@@ -414,21 +359,19 @@ class _AdminDashboardState extends State<AdminDashboard>
         Row(
           children: [
             _buildStatCard(
-              'Pengguna',
-              '128',
-              '↑ 12%',
-              Icons.people_alt_outlined,
-              Colors.blue,
-              const Color(0xFFeef7ff),
+              'Total Produk',
+              _totalProduk.toString(),
+              Icons.inventory_outlined,
+              Colors.green,
+              const Color(0xFFe6f7ed),
             ),
             const SizedBox(width: 16),
             _buildStatCard(
-              'Produk',
-              '534',
-              '↑ 8%',
-              Icons.shopping_bag_outlined,
-              Colors.green,
-              const Color(0xFFe6f7ed),
+              'Kategori',
+              _totalKategori.toString(),
+              Icons.category_outlined,
+              Colors.indigo,
+              const Color(0xFFe8eaf6),
             ),
           ],
         ),
@@ -436,18 +379,16 @@ class _AdminDashboardState extends State<AdminDashboard>
         Row(
           children: [
             _buildStatCard(
-              'Transaksi',
-              '86',
-              '↑ 24%',
-              Icons.receipt_long_outlined,
+              'Total Pesanan',
+              _totalPesanan.toString(),
+              Icons.shopping_cart_outlined,
               Colors.orange,
               const Color(0xFFfef4e6),
             ),
             const SizedBox(width: 16),
             _buildStatCard(
               'Pendapatan',
-              'Rp 15,4 Jt',
-              '↑ 18%',
+              _formatCurrency(_totalPendapatan),
               Icons.attach_money,
               Colors.purple,
               const Color(0xFFf5e6f9),
@@ -455,6 +396,58 @@ class _AdminDashboardState extends State<AdminDashboard>
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color iconColor,
+    Color bgColor,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -510,26 +503,6 @@ class _AdminDashboardState extends State<AdminDashboard>
                       menu['title'],
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    if (menu['route'] != null) const SizedBox(height: 4),
-                    if (menu['route'] != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[100],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'Tersedia',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -540,76 +513,8 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
-  Widget _buildStatCard(
-    String title,
-    String value,
-    String growth,
-    IconData icon,
-    Color iconColor,
-    Color bgColor,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  growth,
-                  style: TextStyle(
-                    color: Colors.green[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChartSection() {
+  Widget _buildRecentOrdersSection() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -625,294 +530,107 @@ class _AdminDashboardState extends State<AdminDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Penjualan Bulanan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Pesanan Terbaru',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(20),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminOrdersPage(),
+                      ),
+                    );
+                  },
+                  child: const Text('Lihat Semua'),
                 ),
-                child: const Row(
-                  children: [
-                    Text(
-                      '6 Bulan Terakhir',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
-          SizedBox(height: 200, child: _buildBarChart()),
+          if (_recentOrders.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: Text(
+                  'Belum ada pesanan',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _recentOrders.length,
+              separatorBuilder: (context, index) => const Divider(),
+              itemBuilder: (context, index) {
+                final order = _recentOrders[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Pesanan #${order.id}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                      '${order.detail.length} item - ${order.tanggalPesan}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatCurrency(order.calculateTotal().toDouble()),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(order.status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          order.status,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _getStatusColor(order.status),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildBarChart() {
-    double maxValue = _salesData.reduce((a, b) => a > b ? a : b);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: List.generate(_months.length, (index) {
-        // Calculate the height percentage based on max value
-        double heightPercentage = _salesData[index] / maxValue;
-
-        return Expanded(
-          child: Column(
-            children: [
-              Text(
-                '${(_salesData[index] / 1000).toStringAsFixed(0)}K',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Penjualan ${_months[index]}: Rp ${_salesData[index].toStringAsFixed(0)}',
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 20,
-                  height: 150 * heightPercentage,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [Colors.blue[300]!, Colors.blue[800]!],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _months[index],
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildTabSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).primaryColor,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Theme.of(context).primaryColor,
-                tabs: const [
-                  Tab(text: 'Pengguna Baru'),
-                  Tab(text: 'Pesanan'),
-                  Tab(text: 'Produk'),
-                ],
-              ),
-              SizedBox(
-                height: 280,
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildRecentUsersList(),
-                    _buildRecentOrdersList(),
-                    _buildProductsGrid(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentUsersList() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _recentUsers.length,
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (context, index) {
-        final user = _recentUsers[index];
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(
-            backgroundColor: Colors.primaries[index % Colors.primaries.length],
-            child: Text(
-              user['avatar'],
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          title: Text(
-            user['name'],
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(user['email']),
-          trailing: Text(
-            user['date'],
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRecentOrdersList() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _recentOrders.length,
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (context, index) {
-        final order = _recentOrders[index];
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            order['id'],
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(order['customer']),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                order['amount'],
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: order['statusColor'].withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  order['status'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: order['statusColor'],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildProductsGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 6,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 0.8,
-      ),
-      itemBuilder: (context, index) {
-        final color = Colors.primaries[index % Colors.primaries.length];
-        return Container(
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                [
-                  Icons.smartphone,
-                  Icons.laptop,
-                  Icons.headphones,
-                  Icons.watch,
-                  Icons.camera,
-                  Icons.speaker,
-                ][index],
-                size: 32,
-                color: color,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                [
-                  'Smartphone',
-                  'Laptop',
-                  'Headphones',
-                  'Smart Watch',
-                  'Camera',
-                  'Speaker',
-                ][index],
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  '45 item',
-                  '32 item',
-                  '28 item',
-                  '19 item',
-                  '12 item',
-                  '24 item',
-                ][index],
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _getMonthName(int month) {
-    const months = [
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    final weekdays = [
+      '',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu'
+    ];
+    final months = [
+      '',
       'Januari',
       'Februari',
       'Maret',
@@ -926,6 +644,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       'November',
       'Desember',
     ];
-    return months[month - 1];
+
+    return '${weekdays[now.weekday]}, ${now.day} ${months[now.month]} ${now.year}';
   }
 }
